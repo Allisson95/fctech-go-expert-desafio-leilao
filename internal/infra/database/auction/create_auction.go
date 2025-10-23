@@ -5,7 +5,10 @@ import (
 	"fullcycle-auction_go/configuration/logger"
 	"fullcycle-auction_go/internal/entity/auction_entity"
 	"fullcycle-auction_go/internal/internal_error"
+	"os"
+	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -46,5 +49,34 @@ func (ar *AuctionRepository) CreateAuction(
 		return internal_error.NewInternalServerError("Error trying to insert auction")
 	}
 
+	// A função time.AfterFunc agenda a execução de uma função após um determinado intervalo de tempo.
+	// Internamente, time.AfterFunc cria uma goroutine que aguarda o tempo especificado e, em seguida, executa a função fornecida.
+	// Neste caso, ela está sendo usada para agendar a atualização do status do leilão para "Completed"
+	// após o intervalo definido pela função getAuctionInterval().
+	time.AfterFunc(getAuctionInterval(), func() {
+		updateFilter := bson.D{
+			bson.E{Key: "_id", Value: auctionEntity.Id},
+		}
+		updateData := bson.D{
+			bson.E{Key: "$set", Value: bson.D{
+				bson.E{Key: "status", Value: auction_entity.Completed},
+			}},
+		}
+		_, err := ar.Collection.UpdateOne(context.TODO(), updateFilter, updateData)
+		if err != nil {
+			logger.Error("Error trying to update auction status to closed", err)
+		}
+	})
+
 	return nil
+}
+
+func getAuctionInterval() time.Duration {
+	auctionInterval := os.Getenv("AUCTION_INTERVAL")
+	duration, err := time.ParseDuration(auctionInterval)
+	if err != nil {
+		return time.Minute * 5
+	}
+
+	return duration
 }

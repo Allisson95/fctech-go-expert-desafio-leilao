@@ -12,7 +12,7 @@ func (bu *BidUseCase) FindBidByAuctionId(
 		return nil, err
 	}
 
-	var bidOutputList []BidOutputDTO
+	var bidOutputList []BidOutputDTO = make([]BidOutputDTO, len(bidList))
 	for _, bid := range bidList {
 		bidOutputList = append(bidOutputList, BidOutputDTO{
 			Id:        bid.Id,

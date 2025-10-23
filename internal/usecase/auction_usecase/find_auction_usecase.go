@@ -36,7 +36,7 @@ func (au *AuctionUseCase) FindAuctions(
 		return nil, err
 	}
 
-	var auctionOutputs []AuctionOutputDTO
+	auctionOutputs := make([]AuctionOutputDTO, len(auctionEntities))
 	for _, value := range auctionEntities {
 		auctionOutputs = append(auctionOutputs, AuctionOutputDTO{
 			Id:          value.Id,

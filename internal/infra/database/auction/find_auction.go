@@ -6,9 +6,11 @@ import (
 	"fullcycle-auction_go/configuration/logger"
 	"fullcycle-auction_go/internal/entity/auction_entity"
 	"fullcycle-auction_go/internal/internal_error"
+	"regexp"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 func (ar *AuctionRepository) FindAuctionById(
@@ -48,7 +50,7 @@ func (repo *AuctionRepository) FindAuctions(
 	}
 
 	if productName != "" {
-		filter["productName"] = primitive.Regex{Pattern: productName, Options: "i"}
+		filter["product_name"] = primitive.Regex{Pattern: regexp.QuoteMeta(productName), Options: "i"}
 	}
 
 	cursor, err := repo.Collection.Find(ctx, filter)
@@ -58,13 +60,13 @@ func (repo *AuctionRepository) FindAuctions(
 	}
 	defer cursor.Close(ctx)
 
-	var auctionsMongo []AuctionEntityMongo
+	var auctionsMongo []AuctionEntityMongo = make([]AuctionEntityMongo, 0)
 	if err := cursor.All(ctx, &auctionsMongo); err != nil {
 		logger.Error("Error decoding auctions", err)
 		return nil, internal_error.NewInternalServerError("Error decoding auctions")
 	}
 
-	var auctionsEntity []auction_entity.Auction
+	var auctionsEntity []auction_entity.Auction = make([]auction_entity.Auction, len(auctionsMongo))
 	for _, auction := range auctionsMongo {
 		auctionsEntity = append(auctionsEntity, auction_entity.Auction{
 			Id:          auction.Id,

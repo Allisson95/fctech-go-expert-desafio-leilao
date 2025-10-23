@@ -1,34 +1,31 @@
-version: '3.8'
-
 services:
   app:
     build:
       dockerfile: Dockerfile
       context: .
-    ports:
-      - "8080:8080"
-    env_file:
-      - cmd/auction/.env
     command: sh -c "/auction"
-    networks:
-      - localNetwork
-
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb
+    depends_on:
+      - mongo
+    environment:
+      - BATCH_INSERT_INTERVAL=20s
+      - MAX_BATCH_SIZE=4
+      - AUCTION_INTERVAL=20s
+      - MONGODB_URL=mongodb://admin:admin@mongo:27017/auctions?authSource=admin
+      - MONGODB_DB=auctions
     ports:
-      - "27017:27017"
-    env_file:
-      - cmd/auction/.env
+      - 8080:8080
+
+  mongo:
+    image: mongo:7
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+    ports:
+      - 27017:27017
     volumes:
       - mongo-data:/data/db
-    networks:
-      - localNetwork
 
 volumes:
   mongo-data:
     driver: local
-
-networks:
-  localNetwork:
-    driver: bridge
